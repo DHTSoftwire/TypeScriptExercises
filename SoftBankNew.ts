@@ -1,5 +1,6 @@
 var readlineSync = require('readline-sync')
 var winston = require('winston');
+var lines = require('./Transactions2013.json');
 
 // LOGGING:
 
@@ -26,15 +27,7 @@ interface Transaction {
 
 // METHODS:
 
-// Inputs the file and parse it into an array of lines:
-function inputParse() :string[] {
-    var fs = require('fs');
-    var text = fs.readFileSync('DodgyTransactions2015.csv','utf8',(err,data) => {
-        if (err) throw err;
-        return data;
-    });
-    return text.split('\r\n');
-};
+/\b[1-2][0-9][0-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|30|31)T00-00-00\b/
 
 // Parses the transactionLine and alter both the creditor and the debtor
 function processTransaction(transactionLine: string) :void {
@@ -46,7 +39,7 @@ function processTransaction(transactionLine: string) :void {
     var amt = parseFloat(details[4]);
     if (isNaN(amt)) {
         winston.log('error', 'You have entered an invalid trasaction, becuase you have entered ' + details[4] + ' as the amount, which is not valid. This transaction will not be recorded.');
-    } else if (!/\b(0[1-9]|1[1-9]|2[1-9]|30|31)\/(0[1-9]|1[0-2])\/[1-2][0-9][0-9][0-9]\b/.test(dateString)) {
+    } else if (!/\b[1-2][0-9][0-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|30|31)T00:00:00\b/.test(dateString)) {
         winston.log('error', 'You have entered an invalid trasaction, becuase you have entered ' + dateString + ' as the date, which is not a valid format. This transaction will not be recorded. For future reference, please enter the date in a dd/mm/yyyy format');
     } else {
         var thisTransaction = { from: fromPerson, to: toPerson, amount: amt, date: dateString, narrative: narr};
@@ -112,9 +105,9 @@ function commandLineInstructions() :void {
 
 // Runs the program
 function run() :void {
-    var lines = inputParse();
-    for (var i=1; i<lines.length-1; i++) { // For some reason the last line of this file is blank, hence we need 'lines.length-1'
-        processTransaction(lines[i]);
+    for (var i=1; i<lines.length; i++) {
+        var t = lines[i];
+        processTransaction([t.Date,t.FromAccount,t.ToAccount,t.Narrative,t.Amount].join(','));
     };
     commandLineInstructions();
 };
